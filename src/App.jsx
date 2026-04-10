@@ -6,8 +6,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
    Fonts: Instrument Serif (display) + Geist (body) + Geist Mono (code/data)
 ═══════════════════════════════════════════════════════════════════════════ */
 
-// In production, set REACT_APP_API_URL env var to your Railway backend URL
-const API = process.env.REACT_APP_API_URL || "http://localhost:5050";
+// API URL — set REACT_APP_API_URL in Vercel environment variables
+// Vercel: Project Settings → Environment Variables → REACT_APP_API_URL = https://your-backend.railway.app
+const API = process.env.REACT_APP_API_URL
+  || (window.location.hostname === "localhost" ? "http://localhost:5050" : "");
+// If API is empty string, all fetch calls go to same origin (won't work cross-domain)
+// Make sure REACT_APP_API_URL is set in Vercel!
 
 // Token auth — stored in localStorage, sent as Authorization header
 // This works cross-domain without any cookie/SameSite issues
@@ -1492,7 +1496,7 @@ function MainApp({ profile: initProfile, onLogout }) {
                     )}
                     {qaResult.resume_filename&&(
                       <div style={{marginTop:8}}>
-                        <a href={`http://localhost:5050/api/resume/download/${qaResult.resume_filename}`}
+                        <a href={`${API}/api/resume/download/${qaResult.resume_filename}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{textDecoration:"none"}}>
                           <Pill label={`📄 ${qaResult.resume_filename}`} color={C.blue} sm/>
