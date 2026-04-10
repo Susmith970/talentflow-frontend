@@ -127,6 +127,17 @@ a{text-decoration:none}
   .tf-score-circle{display:none!important}
   .tf-job-card{padding:12px!important}
   .tf-qa-header{flex-direction:column!important;gap:10px!important}
+  /* Auth page mobile */
+  .tf-auth-brand{display:none!important}
+  .tf-auth-form{padding:24px 20px!important}
+  .tf-auth-form-inner{max-width:100%!important}
+}
+@media(max-width:480px){
+  .tf-grid-4{grid-template-columns:1fr!important}
+  .tf-auth-form{padding:20px 16px!important}
+}
+@media(max-width:768px){
+  .tf-auth-mobile-logo{display:flex!important}
 }
 @media(max-width:480px){
   .tf-grid-4{grid-template-columns:1fr!important}
@@ -329,8 +340,8 @@ function AuthPage({ profilesExist, onAuth }) {
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",overflow:"hidden"}}>
-      {/* Left brand */}
-      <div style={{width:380,background:C.s0,borderRight:`1px solid ${C.b0}`,
+      {/* Left brand — hidden on mobile */}
+      <div className="tf-auth-brand" style={{width:380,background:C.s0,borderRight:`1px solid ${C.b0}`,
         display:"flex",flexDirection:"column",padding:"48px 36px",flexShrink:0,position:"relative",overflow:"hidden"}}>
         {/* Decorative grid */}
         <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(${C.b0} 1px,transparent 1px),linear-gradient(90deg,${C.b0} 1px,transparent 1px)`,backgroundSize:"40px 40px",opacity:.12,pointerEvents:"none"}}/>
@@ -376,9 +387,22 @@ function AuthPage({ profilesExist, onAuth }) {
       </div>
 
       {/* Right form */}
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",
+      <div className="tf-auth-form" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",
         padding:"40px 48px",overflowY:"auto"}}>
-        <div style={{width:"100%",maxWidth:500,animation:"fadeUp .4s ease"}}>
+        <div className="tf-auth-form-inner" style={{width:"100%",maxWidth:500,animation:"fadeUp .4s ease"}}>
+
+          {/* Mobile logo — only shows when brand panel is hidden */}
+          <div className="tf-auth-mobile-logo" style={{
+            display:"none",alignItems:"center",gap:8,marginBottom:24
+          }}>
+            <div style={{width:34,height:34,borderRadius:9,background:C.gold,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:16,fontWeight:900,color:"#000"}}>J</div>
+            <div>
+              <div style={{fontFamily:"'Instrument Serif',serif",fontSize:20,color:C.t0}}>JobHunt</div>
+              <Mono c={C.t2} s={9} style={{letterSpacing:".1em"}}>AI JOB SEARCH</Mono>
+            </div>
+          </div>
 
           {/* Mode tabs */}
           <div style={{display:"flex",gap:3,background:C.s1,border:`1px solid ${C.b0}`,
@@ -1654,9 +1678,10 @@ function MainApp({ profile: initProfile, onLogout }) {
                         </div>
                       </div>
                     )}
-                    <a href={`${API}${rbResult.url}`} target="_blank" rel="noopener noreferrer">
-                      <Btn variant="teal" size="sm">⬇ Download PDF</Btn>
-                    </a>
+                    <Btn variant="teal" size="sm"
+                      onClick={()=>downloadResume(rbResult.filename)}>
+                      ⬇ Download PDF
+                    </Btn>
                   </div>
                 )}
 
