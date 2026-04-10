@@ -487,9 +487,9 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
   const [tab, setTab]     = useState("overview");
   const [note, setNote]   = useState("");
   const [job, setJob]     = useState(jobProp);
-  const [copied, setCopied] = useState(false);
+  const [_copied, setCopied] = useState(false); // eslint-disable-line no-unused-vars
 
-  useEffect(() => { setJob(jobProp); setTab("overview"); setNote(jobProp?.notes||""); }, [jobProp?.id]);
+  useEffect(() => { setJob(jobProp); setTab("overview"); setNote(jobProp?.notes||""); }, [jobProp?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!job) return null;
   const cfg = STATUS_CFG[job.status] || STATUS_CFG.new;
@@ -498,7 +498,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
     await apiFetch(`/api/jobs/${job.id}/note`,"PATCH",{notes:note});
   };
 
-  const copy = () => {
+  const copy = () => { // eslint-disable-line no-unused-vars
     if(job.cover_letter) navigator.clipboard.writeText(job.cover_letter).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
   };
 
@@ -776,6 +776,7 @@ function MainApp({ profile: initProfile, onLogout }) {
 
   useEffect(() => {
     loadJobs(); loadStats(); loadResumes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   // Poll pipeline status when running
@@ -792,6 +793,7 @@ function MainApp({ profile: initProfile, onLogout }) {
       } catch(e) {}
     }, 2000);
     return () => clearInterval(iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipeline.running]);
 
   // Poll scrape progress
@@ -807,6 +809,7 @@ function MainApp({ profile: initProfile, onLogout }) {
       }
     }, 1500);
     return () => clearInterval(iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[scraping]);
 
   const startScrape = async () => {
