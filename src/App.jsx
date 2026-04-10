@@ -45,7 +45,7 @@ const apiUpload = async (path, formData) => {
   return r.json();
 };
 
-// Download a resume PDF with auth — browsers can't send headers on <a href> clicks
+// Download a resume PDF with auth — browsers cannot send headers on anchor tag clicks
 // so we fetch it as a blob and trigger a local download
 const downloadResume = async (filename) => {
   if (!filename) return;
@@ -602,7 +602,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
                     display:"flex",alignItems:"center",justifyContent:"center",gap:7,
                     textDecoration:"none",letterSpacing:".03em"}}>
                   ↗ Submit Manually
-                </span>
+                </a>
               : <a href={job.url} target="_blank" rel="noopener noreferrer"
                   style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
                     borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
@@ -615,7 +615,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
               </Btn>
             : <span style={{cursor:"pointer"}} onClick={()=>downloadResume(job.resume_filename)}>
                 <Btn variant="teal">⬇ Resume</Btn>
-              </a>
+              </span>
           }
           <a href={job.url} target="_blank" rel="noopener noreferrer"
             style={{padding:"9px 12px",background:C.s1,border:`1px solid ${C.b0}`,
