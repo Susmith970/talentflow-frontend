@@ -45,6 +45,29 @@ const apiUpload = async (path, formData) => {
   return r.json();
 };
 
+// Download a resume PDF with auth — browsers can't send headers on <a href> clicks
+// so we fetch it as a blob and trigger a local download
+const downloadResume = async (filename) => {
+  if (!filename) return;
+  const token = _getToken();
+  // Use ?token= query param so the backend can auth the download
+  const url = `${API}/api/resume/download/${filename}${token ? "?token=" + token : ""}`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) { alert("Could not download resume — try again"); return; }
+    const blob = await r.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  } catch(e) {
+    alert("Download failed: " + e.message);
+  }
+};
+
 /* ── Tokens ── */
 const C = {
   bg:   "#080B12", s0:  "#0D1020", s1:  "#111525", s2:  "#161B30",
@@ -579,7 +602,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
                     display:"flex",alignItems:"center",justifyContent:"center",gap:7,
                     textDecoration:"none",letterSpacing:".03em"}}>
                   ↗ Submit Manually
-                </a>
+                </span>
               : <a href={job.url} target="_blank" rel="noopener noreferrer"
                   style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
                     borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
@@ -590,7 +613,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
             ? <Btn onClick={()=>onGenResume(job.id)} disabled={genLoading} style={{flex:1}}>
                 {genLoading?<><Spin sz={11}/>Generating…</>:"📄 Gen Resume"}
               </Btn>
-            : <a href={`${API}/api/resume/download/${job.resume_filename}`} target="_blank" rel="noopener noreferrer">
+            : <span style={{cursor:"pointer"}} onClick={()=>downloadResume(job.resume_filename)}>
                 <Btn variant="teal">⬇ Resume</Btn>
               </a>
           }
@@ -1496,11 +1519,10 @@ function MainApp({ profile: initProfile, onLogout }) {
                     )}
                     {qaResult.resume_filename&&(
                       <div style={{marginTop:8}}>
-                        <a href={`${API}/api/resume/download/${qaResult.resume_filename}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{textDecoration:"none"}}>
+                        <span style={{cursor:"pointer",textDecoration:"none"}}
+                          onClick={()=>downloadResume(qaResult.resume_filename)}>
                           <Pill label={`📄 ${qaResult.resume_filename}`} color={C.blue} sm/>
-                        </a>
+                        </span>
                       </div>
                     )}
                   </div>
