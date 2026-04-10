@@ -9,19 +9,35 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // In production, set REACT_APP_API_URL env var to your Railway backend URL
 const API = process.env.REACT_APP_API_URL || "http://localhost:5050";
 
+// Token auth — stored in localStorage, sent as Authorization header
+// This works cross-domain without any cookie/SameSite issues
+const _getToken = () => localStorage.getItem("tf_token");
+const _setToken = (t) => t ? localStorage.setItem("tf_token", t) : localStorage.removeItem("tf_token");
+
 const apiFetch = async (path, method = "GET", body = null) => {
-  const opts = { method, credentials: "include", headers: { "Content-Type": "application/json" } };
+  const headers = { "Content-Type": "application/json" };
+  const token = _getToken();
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
+
   const r = await fetch(`${API}${path}`, opts);
   if (!r.ok && r.status !== 401) {
     const err = await r.json().catch(() => ({ error: "Network error" }));
     throw new Error(err.error || `HTTP ${r.status}`);
   }
-  return r.json();
+  const data = await r.json();
+  // If the response includes a token, save it
+  if (data && data.token) _setToken(data.token);
+  return data;
 };
 
 const apiUpload = async (path, formData) => {
-  const r = await fetch(`${API}${path}`, { method: "POST", credentials: "include", body: formData });
+  const headers = {};
+  const token = _getToken();
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const r = await fetch(`${API}${path}`, { method: "POST", headers, body: formData });
   return r.json();
 };
 
@@ -487,9 +503,9 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
   const [tab, setTab]     = useState("overview");
   const [note, setNote]   = useState("");
   const [job, setJob]     = useState(jobProp);
-  const [_copied, setCopied] = useState(false); // eslint-disable-line no-unused-vars
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => { setJob(jobProp); setTab("overview"); setNote(jobProp?.notes||""); }, [jobProp?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setJob(jobProp); setTab("overview"); setNote(jobProp?.notes||""); }, [jobProp?.id]);
 
   if (!job) return null;
   const cfg = STATUS_CFG[job.status] || STATUS_CFG.new;
@@ -498,7 +514,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
     await apiFetch(`/api/jobs/${job.id}/note`,"PATCH",{notes:note});
   };
 
-  const copy = () => { // eslint-disable-line no-unused-vars
+  const copy = () => {
     if(job.cover_letter) navigator.clipboard.writeText(job.cover_letter).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
   };
 
@@ -776,7 +792,6 @@ function MainApp({ profile: initProfile, onLogout }) {
 
   useEffect(() => {
     loadJobs(); loadStats(); loadResumes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   // Poll pipeline status when running
@@ -793,7 +808,6 @@ function MainApp({ profile: initProfile, onLogout }) {
       } catch(e) {}
     }, 2000);
     return () => clearInterval(iv);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipeline.running]);
 
   // Poll scrape progress
@@ -809,7 +823,6 @@ function MainApp({ profile: initProfile, onLogout }) {
       }
     }, 1500);
     return () => clearInterval(iv);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[scraping]);
 
   const startScrape = async () => {
@@ -2104,14 +2117,33 @@ export default function App() {
   const [authState, setAuth] = useState({ checking:true, loggedIn:false, profile:null, profilesExist:true });
 
   useEffect(() => {
-    apiFetch("/api/auth/status")
-      .then(r => setAuth({ checking:false, loggedIn:r.logged_in, profile:r.profile||null, profilesExist:r.profiles_exist }))
-      .catch(()=> setAuth({ checking:false, loggedIn:false, profile:null, profilesExist:false }));
+    // If we have a stored token, validate it with /api/auth/me
+    // Otherwise fall back to /api/auth/status for initial page load
+    const token = _getToken();
+    const checkUrl = token ? "/api/auth/me" : "/api/auth/status";
+    apiFetch(checkUrl)
+      .then(r => {
+        if (r.ok && r.profile) {
+          // Token validated
+          setAuth({ checking:false, loggedIn:true, profile:r.profile, profilesExist:true });
+        } else if (r.logged_in && r.profile) {
+          // Session cookie (local dev)
+          setAuth({ checking:false, loggedIn:true, profile:r.profile, profilesExist:true });
+        } else {
+          _setToken(null); // clear invalid token
+          setAuth({ checking:false, loggedIn:false, profile:null, profilesExist:r.profiles_exist||false });
+        }
+      })
+      .catch(()=> {
+        _setToken(null);
+        setAuth({ checking:false, loggedIn:false, profile:null, profilesExist:false });
+      });
   },[]);
 
   const onAuth   = (p) => setAuth({ checking:false, loggedIn:true, profile:p, profilesExist:true });
   const onLogout = async () => {
     await apiFetch("/api/auth/logout","POST").catch(()=>{});
+    _setToken(null);  // clear stored token
     setAuth({ checking:false, loggedIn:false, profile:null, profilesExist:true });
   };
 
