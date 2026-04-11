@@ -1720,9 +1720,9 @@ function MainApp({ profile: initProfile, onLogout }) {
                       <Mono c={C.t2} s={10}>·</Mono>
                       <Mono c={C.t2} s={10}>{new Date(r.created).toLocaleDateString()}</Mono>
                     </div>
-                    <a href={`${API}${r.url}`} target="_blank" rel="noopener noreferrer" style={{display:"block"}}>
+                    <div style={{display:"block"}} onClick={()=>downloadResume(r.filename)}>
                       <Btn variant="ghost" size="sm" style={{width:"100%",justifyContent:"center"}}>⬇ Download</Btn>
-                    </a>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -1751,9 +1751,9 @@ function MainApp({ profile: initProfile, onLogout }) {
                       <Mono c={C.t2} s={10}>·</Mono>
                       <Mono c={C.t2} s={10}>{new Date(r.created).toLocaleString()}</Mono>
                     </div>
-                    <a href={`${API}${r.url}`} target="_blank" rel="noopener noreferrer" style={{display:"block"}}>
+                    <div style={{display:"block"}} onClick={()=>downloadResume(r.filename)}>
                       <Btn variant="teal" style={{width:"100%",justifyContent:"center"}}>⬇ Download PDF</Btn>
-                    </a>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -1777,6 +1777,39 @@ function MainApp({ profile: initProfile, onLogout }) {
               </div>
               {saveMsg&&<div style={{color:C.teal,fontSize:12,marginBottom:12,fontWeight:600}}>{saveMsg}</div>}
               <p style={{color:C.t1,fontSize:12,marginBottom:20}}>Everything here feeds resume generation, ATS scoring, and application form filling.</p>
+
+              {/* ── UPLOAD BASE RESUME ── */}
+              <Card style={{padding:"16px 20px",marginBottom:12,border:`1px solid ${C.teal}40`,background:`${C.teal}06`}}>
+                <div style={{fontWeight:700,fontSize:12,color:C.teal,marginBottom:4,letterSpacing:".06em"}}>📎 UPLOAD BASE RESUME — AUTO-FILL PROFILE</div>
+                <p style={{color:C.t1,fontSize:11,marginBottom:12,lineHeight:1.6}}>
+                  Upload your resume once. Claude extracts all your jobs, projects, skills, and certifications and fills them in below automatically.
+                </p>
+                <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                  <input type="file" accept=".pdf,.docx,.txt" style={{display:"none"}} id="settings-resume-upload"
+                    onChange={async e=>{
+                      const file=e.target.files?.[0]; if(!file)return;
+                      setErr(""); setSaveMsg("⏳ Extracting from resume…");
+                      const fd=new FormData(); fd.append("file",file);
+                      try{
+                        const r=await apiUpload("/api/profile/upload-resume",fd);
+                        if(r.error) throw new Error(r.error);
+                        const s=r.summary||{};
+                        setSaveMsg(`✓ Extracted: ${s.jobs||0} jobs, ${s.projects||0} projects, ${s.certifications||0} certs — scroll down to review`);
+                        const up=await apiFetch("/api/profile");
+                        if(up&&!up.error) setProfile(sanitizeProfile(up));
+                        setTimeout(()=>setSaveMsg(""),8000);
+                      }catch(ex){setErr(ex.message);setSaveMsg("");}
+                      e.target.value="";
+                    }}/>
+                  <label htmlFor="settings-resume-upload" style={{
+                    display:"inline-flex",alignItems:"center",gap:7,padding:"9px 18px",
+                    background:C.teal,borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
+                    cursor:"pointer",fontFamily:"'Geist',sans-serif",whiteSpace:"nowrap"}}>
+                    ⬆ Choose File
+                  </label>
+                  <Mono c={C.t2} s={11}>Supports PDF, DOCX, TXT · extracts all jobs + projects</Mono>
+                </div>
+              </Card>
 
               {/* ── CONTACT ── */}
               <Card style={{padding:"18px 20px",marginBottom:12}}>
@@ -1864,6 +1897,8 @@ function MainApp({ profile: initProfile, onLogout }) {
                 <div className="tf-grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px"}}>
                   <Input label="Expected Salary (e.g. $130,000)" value={profile.salary_expectation||""} onChange={e=>setProfile(p=>({...p,salary_expectation:e.target.value}))} placeholder="$130,000"/>
                   <Input label="Employment Type" value={profile.employment_type||"Full-time"} onChange={e=>setProfile(p=>({...p,employment_type:e.target.value}))} placeholder="Full-time"/>
+                  <Input label="Salary Minimum" value={profile.salary_min||""} onChange={e=>setProfile(p=>({...p,salary_min:e.target.value}))} placeholder="$110,000"/>
+                  <Input label="Salary Maximum" value={profile.salary_max||""} onChange={e=>setProfile(p=>({...p,salary_max:e.target.value}))} placeholder="$150,000"/>
                   <Input label="Available Start Date" value={profile.start_date||""} onChange={e=>setProfile(p=>({...p,start_date:e.target.value}))} placeholder="2 weeks"/>
                   <Input label="Notice Period" value={profile.notice_period||""} onChange={e=>setProfile(p=>({...p,notice_period:e.target.value}))} placeholder="2 weeks"/>
                   <div style={{marginBottom:14}}>
