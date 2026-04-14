@@ -113,34 +113,40 @@ a{text-decoration:none}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-/* Mobile responsive */
+/* ── Mobile Responsive ───────────────────────────────────────────── */
 @media(max-width:768px){
+  /* Layout */
   .tf-sidebar{display:none!important}
   .tf-mobile-nav{display:flex!important}
   .tf-topbar-stats{display:none!important}
-  .tf-main{padding:12px 14px!important}
-  .tf-page{padding:14px 12px!important;height:calc(100vh - 48px - 56px)!important}
+  .tf-topbar-scrape{max-width:120px!important;font-size:10px!important}
+  /* Pages */
+  .tf-main{padding:10px 12px!important}
+  .tf-page{padding:12px 10px!important;height:calc(100vh - 48px - 56px)!important;overflow-y:auto!important}
+  /* Grids */
   .tf-grid-2{grid-template-columns:1fr!important}
   .tf-grid-4{grid-template-columns:1fr 1fr!important}
+  /* Cards */
   .tf-card-row{flex-direction:column!important;gap:8px!important}
+  .tf-job-card{padding:12px 10px!important;min-height:44px!important}
   .tf-hide-mobile{display:none!important}
   .tf-score-circle{display:none!important}
-  .tf-job-card{padding:12px!important}
   .tf-qa-header{flex-direction:column!important;gap:10px!important}
-  /* Auth page mobile */
+  /* Job drawer — full screen on mobile */
+  .tf-drawer{width:100%!important;right:0!important;left:0!important}
+  /* Builder — single column on mobile */
+  .tf-builder-grid{grid-template-columns:1fr!important;height:auto!important}
+  .tf-builder-panel{display:none!important}
+  /* Auth */
   .tf-auth-brand{display:none!important}
+  .tf-auth-mobile-logo{display:flex!important}
   .tf-auth-form{padding:24px 20px!important}
   .tf-auth-form-inner{max-width:100%!important}
 }
 @media(max-width:480px){
   .tf-grid-4{grid-template-columns:1fr!important}
-  .tf-auth-form{padding:20px 16px!important}
-}
-@media(max-width:768px){
-  .tf-auth-mobile-logo{display:flex!important}
-}
-@media(max-width:480px){
-  .tf-grid-4{grid-template-columns:1fr!important}
+  .tf-auth-form{padding:16px 14px!important}
+  .tf-mobile-nav button{min-width:38px!important}
 }
 `
 
@@ -570,7 +576,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
   };
 
   return (
-    <div style={{position:"fixed",top:0,right:0,bottom:0,width:540,
+    <div className="tf-drawer" style={{position:"fixed",top:0,right:0,bottom:0,width:540,
       background:C.s0,borderLeft:`1px solid ${C.b0}`,
       display:"flex",flexDirection:"column",zIndex:200,
       animation:"slideIn .3s ease",boxShadow:`-20px 0 60px #00000060`}}>
@@ -804,7 +810,7 @@ function MainApp({ profile: initProfile, onLogout }) {
   const [pipeline, setPipeline]     = useState({running:false,phase:"",phase_label:"Idle",log:[],
     jobs_scraped:0,jobs_new:0,jobs_eligible:0,jobs_resumed:0,jobs_submitted:0,jobs_failed:0,jobs_manual:0,
     current_job:"",error:null,finished_at:null});
-  const [pipeOpts, setPipeOpts]     = useState({score_threshold:65,max_apply:30});
+  const [pipeOpts, setPipeOpts]     = useState({score_threshold:65,max_apply:30,employment_type_pref:"Any"});
   const [scrapeInfo, setScrInfo] = useState({found:0,current_source:""});
   const [genLoading, setGenLoad] = useState(false);
   const [filter, setFilter]   = useState("all");
@@ -1008,20 +1014,22 @@ function MainApp({ profile: initProfile, onLogout }) {
         display:"none",
         position:"fixed",bottom:0,left:0,right:0,
         background:C.s0,borderTop:`1px solid ${C.b0}`,
-        padding:"6px 0 calc(6px + env(safe-area-inset-bottom))",
+        paddingTop:6,paddingBottom:"calc(8px + env(safe-area-inset-bottom))",
         zIndex:1000,justifyContent:"space-around",alignItems:"center"
       }}>
         {NAV.map(n=>{
           const active=page===n.id;
           return (
             <button key={n.id} onClick={()=>setPage(n.id)} style={{
-              display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+              display:"flex",flexDirection:"column",alignItems:"center",gap:3,
               background:"none",border:"none",cursor:"pointer",
-              color:active?C.gold:C.t2,padding:"4px 8px",
-              fontFamily:"'Geist',sans-serif",minWidth:44
+              color:active?C.gold:C.t2,padding:"6px 10px",
+              fontFamily:"'Geist',sans-serif",minWidth:48,
+              WebkitTapHighlightColor:"transparent",
+              transition:"color .12s"
             }}>
-              <span style={{fontSize:16}}>{n.icon}</span>
-              <span style={{fontSize:9,fontWeight:active?700:400,
+              <span style={{fontSize:18,lineHeight:1}}>{n.icon}</span>
+              <span style={{fontSize:9,fontWeight:active?700:500,
                 letterSpacing:".03em"}}>{n.label.replace("Auto-","").replace(" Builder","")}</span>
               {n.badge&&<span style={{position:"absolute",top:4,
                 width:14,height:14,borderRadius:"50%",
@@ -1043,11 +1051,13 @@ function MainApp({ profile: initProfile, onLogout }) {
           </div>
           <div style={{flex:1}}/>
           {scraping&&(
-            <div style={{display:"flex",alignItems:"center",gap:8,
+            <div className="tf-topbar-scrape" style={{display:"flex",alignItems:"center",gap:8,
               background:`${C.teal}10`,border:`1px solid ${C.teal}30`,
-              borderRadius:6,padding:"4px 12px"}}>
+              borderRadius:6,padding:"4px 12px",overflow:"hidden"}}>
               <Spin sz={11} c={C.teal}/>
-              <Mono c={C.teal} s={11}>{scrapeInfo.current_source||"Scraping…"} · {scrapeInfo.found} found</Mono>
+              <Mono c={C.teal} s={11} style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {scrapeInfo.current_source||"Scraping…"} · {scrapeInfo.found}
+              </Mono>
             </div>
           )}
           <div className="tf-topbar-stats" style={{display:"flex",alignItems:"center"}}>
@@ -1073,7 +1083,7 @@ function MainApp({ profile: initProfile, onLogout }) {
         </div>}
 
         {/* Page content */}
-        <div style={{flex:1,overflow:"hidden",paddingBottom:"env(safe-area-inset-bottom)"}}>
+        <div style={{flex:1,overflow:"hidden"}}>
 
           {/* ── PIPELINE PAGE ── */}
           {page==="pipeline"&&(
@@ -1140,6 +1150,21 @@ function MainApp({ profile: initProfile, onLogout }) {
                             borderRadius:6,color:pipeOpts.max_apply===v?C.blue:C.t1,
                             fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Geist',sans-serif"}}>
                           {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Mono c={C.t1} s={11} style={{display:"block",marginBottom:5}}>Employment Type</Mono>
+                    <div style={{display:"flex",gap:6}}>
+                      {["Full-time","Contract","Any"].map(et=>(
+                        <button key={et} onClick={()=>setPipeOpts(o=>({...o,employment_type_pref:et}))}
+                          style={{padding:"5px 10px",
+                            background:(pipeOpts.employment_type_pref||"Any")===et?`${C.gold}18`:C.s1,
+                            border:`1px solid ${(pipeOpts.employment_type_pref||"Any")===et?C.gold:C.b0}`,
+                            borderRadius:6,color:(pipeOpts.employment_type_pref||"Any")===et?C.gold:C.t1,
+                            fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Geist',sans-serif"}}>
+                          {et}
                         </button>
                       ))}
                     </div>
@@ -1341,6 +1366,9 @@ function MainApp({ profile: initProfile, onLogout }) {
                         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                           <StatusPill status={job.status}/>
                           <SrcPill src={job.source}/>
+                      {job.employment_type&&job.employment_type!=="Full-time"&&(
+                        <Pill label={job.employment_type} color={C.amber} sm/>
+                      )}
                         </div>
                       </div>
                     ))}
@@ -1631,7 +1659,7 @@ function MainApp({ profile: initProfile, onLogout }) {
 
           {/* ── RESUME BUILDER ── */}
           {page==="builder"&&(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 300px",height:"100%",overflow:"hidden"}}>
+            <div className="tf-builder-grid" style={{display:"grid",gridTemplateColumns:"1fr 300px",height:"100%",overflow:"hidden"}}>
               <div style={{overflowY:"auto",padding:"22px 26px",borderRight:`1px solid ${C.b0}`}}>
                 <h1 style={{fontFamily:"'Instrument Serif',serif",fontSize:26,fontWeight:400,color:C.t0,marginBottom:6}}>Resume Builder</h1>
                 <p style={{color:C.t1,fontSize:13,marginBottom:22,lineHeight:1.7}}>
@@ -1703,8 +1731,8 @@ function MainApp({ profile: initProfile, onLogout }) {
                 </div>
               </div>
 
-              {/* Resume library */}
-              <div style={{overflowY:"auto",padding:"22px 18px"}}>
+              {/* Resume library — hidden on mobile (use My Resumes page) */}
+              <div className="tf-builder-panel" style={{overflowY:"auto",padding:"22px 18px"}}>
                 <div style={{fontWeight:700,fontSize:13,color:C.t0,marginBottom:14}}>
                   My Resumes <Mono c={C.t2} s={10} style={{marginLeft:6,fontWeight:400}}>{resumes.length} files</Mono>
                 </div>
@@ -1833,6 +1861,22 @@ function MainApp({ profile: initProfile, onLogout }) {
                         fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"'Geist',sans-serif"}}>{w}</button>
                     ))}
                   </div>
+                </div>
+                <div style={{marginBottom:12}}>
+                  <Mono c={C.t0} s={12} w={600} style={{display:"block",marginBottom:8}}>Employment Type</Mono>
+                  <div style={{display:"flex",gap:6}}>
+                    {["Full-time","Contract","Any"].map(et=>(
+                      <button key={et} onClick={()=>setProfile(p=>({...p,employment_type_pref:et}))} style={{
+                        flex:1,padding:"7px 0",
+                        background:(profile.employment_type_pref||"Any")===et?C.blued:C.s1,
+                        border:`1px solid ${(profile.employment_type_pref||"Any")===et?C.blue:C.b0}`,
+                        borderRadius:7,color:(profile.employment_type_pref||"Any")===et?C.blue:C.t1,
+                        fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"'Geist',sans-serif"}}>{et}</button>
+                    ))}
+                  </div>
+                  <Mono c={C.t2} s={10} style={{display:"block",marginTop:5}}>
+                    Filters scraped jobs to matching type. "Contract" finds contractor/freelance/C2C roles.
+                  </Mono>
                 </div>
                 <Input label="Professional Summary (for resume)" value={profile.summary||""} onChange={e=>setProfile(p=>({...p,summary:e.target.value}))} rows={4} placeholder="Data Engineer with X years…"/>
               </Card>
