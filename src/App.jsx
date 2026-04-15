@@ -1115,6 +1115,7 @@ function MainApp({ profile: initProfile, onLogout }) {
           {/* ── PIPELINE PAGE ── */}
           {page==="pipeline"&&(
             <div style={{padding:"22px 26px",overflowY:"auto",height:"100%"}}>
+              {tier==="free"&&<UpgradeBanner action="scrape"/>}
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
                 <div>
                   <h1 style={{fontFamily:"'Instrument Serif',serif",fontSize:28,fontWeight:400,color:C.t0,marginBottom:4}}>
