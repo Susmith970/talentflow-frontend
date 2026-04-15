@@ -963,6 +963,26 @@ function MainApp({ profile: initProfile, onLogout }) {
     {id:"billing",  label:"Upgrade",  icon:"💳"},
   ];
 
+
+  // UpgradeBanner uses MainApp state (tier, tierLimits, setPage)
+  const UpgradeBanner = ({action}) => (
+    <div style={{background:`${C.gold}12`,border:`1px solid ${C.gold}40`,
+      borderRadius:8,padding:"10px 14px",marginBottom:12,
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      gap:12,flexWrap:"wrap"}}>
+      <span style={{color:C.gold,fontWeight:700,fontSize:12}}>⚡ Free Plan</span>
+      <span style={{color:C.t1,fontSize:11}}>
+        {action==="scrape"
+          ?`${tierLimits.scrapes_per_day} scrapes/day · upgrade for more`
+          :`${tierLimits.applies_per_day} apps/day · upgrade for more`}
+      </span>
+      <button onClick={()=>setPage("billing")} style={{
+        padding:"5px 12px",background:C.gold,border:"none",borderRadius:6,
+        color:"#000",fontSize:11,fontWeight:700,cursor:"pointer",
+        fontFamily:"'Geist',sans-serif",whiteSpace:"nowrap"}}>Upgrade →</button>
+    </div>
+  );
+
   return (
     <div style={{height:"100vh",display:"flex",overflow:"hidden"}}>
       {/* Sidebar */}
@@ -2357,22 +2377,6 @@ export default function App() {
     setAuth({ checking:false, loggedIn:false, profile:null, profilesExist:true });
   };
 
-  const UpgradeBanner = ({action}) => (
-    <div style={{background:`${C.gold}12`,border:`1px solid ${C.gold}40`,
-      borderRadius:8,padding:"10px 14px",marginBottom:12,
-      display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-      <span style={{color:C.gold,fontWeight:700,fontSize:12}}>⚡ Free Plan</span>
-      <span style={{color:C.t1,fontSize:11}}>
-        {action==="scrape"
-          ?`${tierLimits.scrapes_per_day} scrapes/day · upgrade for more`
-          :`${tierLimits.applies_per_day} apps/day · upgrade for more`}
-      </span>
-      <button onClick={()=>setPage("billing")} style={{
-        padding:"5px 12px",background:C.gold,border:"none",borderRadius:6,
-        color:"#000",fontSize:11,fontWeight:700,cursor:"pointer",
-        fontFamily:"'Geist',sans-serif",whiteSpace:"nowrap"}}>Upgrade →</button>
-    </div>
-  );
   return (
     <>
       <style>{css}</style>
