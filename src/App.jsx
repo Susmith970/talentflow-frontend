@@ -851,6 +851,10 @@ function MainApp({ profile: initProfile, onLogout }) {
 
   useEffect(() => {
     loadJobs(); loadStats(); loadResumes();
+    // Fetch tier from billing/status
+    apiFetch("/api/billing/status").then(r=>{
+      if(r && r.tier){ setTier(r.tier); setTierLimits(r.limits||{}); }
+    }).catch(()=>{});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -2354,8 +2358,6 @@ export default function App() {
         if (r.ok && r.profile) {
           // Token validated
           setAuth({ checking:false, loggedIn:true, profile:r.profile, profilesExist:true });
-          if(r.tier) setTier(r.tier);
-          if(r.limits) setTierLimits(r.limits);
         } else if (r.logged_in && r.profile) {
           // Session cookie (local dev)
           setAuth({ checking:false, loggedIn:true, profile:r.profile, profilesExist:true });
