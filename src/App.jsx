@@ -622,23 +622,47 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
 
         {/* Actions */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {job.easy_apply
-            ? <Btn onClick={()=>onApply(job.id)} variant="vio" style={{flex:1.4}}>⚡ Auto-Apply</Btn>
-            : job.status==="manual"
-              ? <a href={job.manual_apply_url||job.url} target="_blank" rel="noopener noreferrer"
-                  onClick={()=>onStatus(job.id,"submitted")}
-                  style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
-                    borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
-                    display:"flex",alignItems:"center",justifyContent:"center",gap:7,
-                    textDecoration:"none",letterSpacing:".03em"}}>
-                  ↗ Submit Manually
-                </a>
-              : <a href={job.url} target="_blank" rel="noopener noreferrer"
-                  style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
-                    borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
-                    display:"flex",alignItems:"center",justifyContent:"center",gap:7,
-                    textDecoration:"none",letterSpacing:".03em"}}>↗ Open Listing</a>
-          }
+          {(()=>{
+            const supported = ["greenhouse","lever","ashby","workable","smartrecruiters",
+                               "icims","bamboohr","universal"];
+            const plat = (job.apply_platform||"").toLowerCase();
+            const canAutoSubmit = supported.includes(plat) || job.easy_apply;
+            const hasResume = !!job.resume_filename;
+
+            if(job.status==="submitted"){
+              return <div style={{flex:1.4,padding:"9px 0",background:`${C.teal}15`,
+                border:`1px solid ${C.teal}40`,borderRadius:8,color:C.teal,fontSize:12,
+                fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                ✓ Applied
+              </div>;
+            }
+            if(job.status==="manual"){
+              return <a href={job.manual_apply_url||job.apply_url||job.url}
+                target="_blank" rel="noopener noreferrer"
+                onClick={()=>onStatus(job.id,"submitted")}
+                style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
+                  borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+                  textDecoration:"none",letterSpacing:".03em"}}>
+                ↗ Submit Manually
+              </a>;
+            }
+            if(canAutoSubmit){
+              return <Btn onClick={()=>onApply(job.id)} variant="vio" style={{flex:1.4}}
+                disabled={!hasResume}>
+                {job.status==="applying"
+                  ? <><Spin sz={11}/>Submitting…</>
+                  : hasResume
+                    ? `⚡ Auto-Submit (${plat||"ATS"})`
+                    : "📄 Gen Resume First"}
+              </Btn>;
+            }
+            return <a href={job.apply_url||job.url} target="_blank" rel="noopener noreferrer"
+              style={{flex:1.4,padding:"9px 0",background:`linear-gradient(135deg,${C.gold},${C.goldd})`,
+                borderRadius:8,color:"#000",fontSize:12,fontWeight:700,
+                display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+                textDecoration:"none",letterSpacing:".03em"}}>↗ Open Listing</a>;
+          })()}
           {!job.resume_filename
             ? <Btn onClick={()=>onGenResume(job.id)} disabled={genLoading} style={{flex:1}}>
                 {genLoading?<><Spin sz={11}/>Generating…</>:"📄 Gen Resume"}
@@ -1396,6 +1420,10 @@ function MainApp({ profile: initProfile, onLogout }) {
                           <SrcPill src={job.source}/>
                       {job.employment_type&&job.employment_type!=="Full-time"&&(
                         <Pill label={job.employment_type} color={C.amber} sm/>
+                      )}
+                      {["greenhouse","lever","ashby","workable"].includes(
+                        (job.apply_platform||"").toLowerCase()) && (
+                        <Pill label={"⚡ "+job.apply_platform} color={C.vio} sm/>
                       )}
                         </div>
                       </div>
