@@ -1792,70 +1792,78 @@ function MainApp({ profile: initProfile, onLogout }) {
           )}
 
           {/* ── SETTINGS ── */}
-          {{page==="billing"&&(
+          {page==="billing"&&(
             <div style={{padding:"22px 26px",overflowY:"auto",height:"100%",maxWidth:740}}>
               <h1 style={{fontFamily:"'Instrument Serif',serif",fontSize:26,fontWeight:400,
                 color:C.t0,marginBottom:4}}>Plans &amp; Billing</h1>
               <p style={{color:C.t1,fontSize:13,marginBottom:20,lineHeight:1.7}}>
-                TalentFlow is the only platform that <strong style={{color:C.t0}}>auto-submits
-                applications on your behalf</strong> — not just finds them.
+                TalentFlow is the only platform that{" "}
+                <strong style={{color:C.t0}}>auto-submits applications on your behalf</strong>{" "}
+                — not just finds them.
               </p>
               <Card style={{padding:"14px 18px",marginBottom:18,
                 border:`1px solid ${tier==="free"?C.b0:C.gold}50`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
-                    <Mono c={{C.t0}} s={{13}} w={{700}}>Current plan:{" "}
+                    <Mono c={C.t0} s={13} w={700}>Current plan:{" "}
                       <span style={{color:C.gold,textTransform:"capitalize"}}>{tier}</span>
                     </Mono>
-                    <Mono c={{C.t2}} s={{11}} style={{display:"block",marginTop:3}}>
+                    <Mono c={C.t2} s={11} style={{display:"block",marginTop:3}}>
                       {tierLimits.scrapes_per_day} scrapes/day · {tierLimits.applies_per_day} applications/day
                     </Mono>
                   </div>
-                  {tier!=="free"&&<Pill label="✓ Active" color={{C.teal}}/>}
+                  {tier!=="free"&&<Pill label="✓ Active" color={C.teal}/>}
                 </div>
               </Card>
-              {{[
-                {{plan:"pro",name:"Pro",price:"$29",color:C.blue,
-                  features:["20 scrapes/day","50 auto-submits/day","100 resumes/day","Greenhouse+Lever","Email support"]}},
-                {{plan:"agent",name:"Agent",price:"$79",color:C.gold,badge:"BEST VALUE",
-                  features:["Unlimited scraping","Unlimited submit","Unlimited resumes","All ATS","Priority support"]}},
-              ].map(({plan,name,price,color,badge,features})=>(
-                <Card key={{plan}} style={{padding:"18px",border:`2px solid ${color}40`,background:`${color}05`,position:"relative"}}>
-                  {{badge&&<div style={{position:"absolute",top:-10,right:12,background:color,
-                    color:plan==="agent"?"#000":"#fff",fontSize:9,fontWeight:800,
-                    padding:"2px 10px",borderRadius:10}}>{badge}</div>}}
-                  <div style={{fontWeight:700,fontSize:15,color:C.t0,marginBottom:2}}>{name}</div>
-                  <div style={{display:"flex",alignItems:"baseline",gap:2,marginBottom:12}}>
-                    <span style={{color,fontSize:26,fontWeight:800}}>{price}</span>
-                    <span style={{color:C.t2,fontSize:12}}>/mo</span>
-                  </div>
-                  {{features.map((f,i)=>(
-                    <div key={{i}} style={{display:"flex",gap:8,marginBottom:5}}>
-                      <span style={{color,fontSize:11}}>✓</span>
-                      <span style={{color:C.t1,fontSize:12}}>{f}</span>
+              <div className="tf-grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                {[
+                  {plan:"pro",name:"Pro",price:"$29",color:C.blue,
+                   features:["20 scrapes/day","50 auto-submits/day",
+                             "100 resumes/day","Greenhouse + Lever submit","Email support"]},
+                  {plan:"agent",name:"Agent",price:"$79",color:C.gold,badge:"BEST VALUE",
+                   features:["Unlimited scraping","Unlimited auto-submit",
+                             "Unlimited resumes","All ATS platforms","Priority support"]},
+                ].map(({plan,name,price,color,badge,features})=>(
+                  <Card key={plan} style={{padding:"18px",border:`2px solid ${color}40`,
+                    background:`${color}05`,position:"relative"}}>
+                    {badge&&(
+                      <div style={{position:"absolute",top:-10,right:12,background:color,
+                        color:plan==="agent"?"#000":"#fff",fontSize:9,fontWeight:800,
+                        padding:"2px 10px",borderRadius:10,letterSpacing:".05em"}}>{badge}</div>
+                    )}
+                    <div style={{fontWeight:700,fontSize:15,color:C.t0,marginBottom:2}}>{name}</div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:2,marginBottom:12}}>
+                      <span style={{color,fontSize:26,fontWeight:800}}>{price}</span>
+                      <span style={{color:C.t2,fontSize:12}}>/mo</span>
                     </div>
-                  ))}}
-                  {{tier!==plan
-                    ?<Btn style={{width:"100%",marginTop:14,justifyContent:"center",
-                        background:color,color:plan==="agent"?"#000":"#fff",border:"none"}}
-                        onClick={{async()=>{{
-                          try{{
-                            const r=await apiFetch("/api/billing/create-checkout","POST",{{plan}});
-                            if(r.url) window.location.href=r.url;
-                            else setErr(r.error||"Add STRIPE_SECRET_KEY to Railway");
-                          }}catch(e){{setErr(e.message);}}
-                        }}}}>Upgrade to {{name}} →</Btn>
-                    :<div style={{marginTop:14,textAlign:"center",color,fontWeight:700,fontSize:12}}>✓ Your plan</div>
-                  }}
-                </Card>
-              ))}}
-              <Err msg={{err}}/>
+                    {features.map((f,i)=>(
+                      <div key={i} style={{display:"flex",gap:8,marginBottom:5,alignItems:"flex-start"}}>
+                        <span style={{color,fontSize:11,flexShrink:0}}>✓</span>
+                        <span style={{color:C.t1,fontSize:12}}>{f}</span>
+                      </div>
+                    ))}
+                    {tier!==plan
+                      ?<Btn style={{width:"100%",marginTop:14,justifyContent:"center",
+                          background:color,color:plan==="agent"?"#000":"#fff",border:"none"}}
+                          onClick={async()=>{
+                            try{
+                              const r=await apiFetch("/api/billing/create-checkout","POST",{plan});
+                              if(r.url) window.location.href=r.url;
+                              else setErr(r.error||"Add STRIPE_SECRET_KEY to Railway to enable billing");
+                            }catch(e){setErr(e.message);}
+                          }}>Upgrade to {name} →</Btn>
+                      :<div style={{marginTop:14,textAlign:"center",
+                          color,fontWeight:700,fontSize:12}}>✓ Your current plan</div>
+                    }
+                  </Card>
+                ))}
+              </div>
+              <Err msg={err}/>
               <p style={{color:C.t2,fontSize:11,textAlign:"center",marginTop:8}}>
                 Secured by Stripe · Cancel anytime · No hidden fees
               </p>
             </div>
           )}
-
           {page==="settings"&&(
             <div style={{padding:"22px 26px",overflowY:"auto",height:"100%",maxWidth:780}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
