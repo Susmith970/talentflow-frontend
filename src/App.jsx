@@ -826,6 +826,7 @@ function MainApp({ profile: initProfile, onLogout }) {
   const [profile, setProfile] = useState(sanitizeProfile(initProfile));
   const [page, setPage]       = useState("dashboard");
   const [tier, setTier]             = useState("free");
+  const [liSession, setLiSession]   = useState({ready:false,has_session:false,session_age:null});
   const [tierLimits, setTierLimits] = useState({scrapes_per_day:3,applies_per_day:5});
   const [jobs, setJobs]       = useState([]);
   const [stats, setStats]     = useState({total:0,by_status:{},by_source:{}});
@@ -878,6 +879,10 @@ function MainApp({ profile: initProfile, onLogout }) {
     // Fetch tier from billing/status
     apiFetch("/api/billing/status").then(r=>{
       if(r && r.tier){ setTier(r.tier); setTierLimits(r.limits||{}); }
+    }).catch(()=>{});
+    // Fetch LinkedIn session status
+    apiFetch("/api/linkedin/status").then(r=>{
+      if(r && !r.error) setLiSession(r);
     }).catch(()=>{});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
@@ -1965,6 +1970,57 @@ function MainApp({ profile: initProfile, onLogout }) {
                   </label>
                   <Mono c={C.t2} s={11}>Supports PDF, DOCX, TXT · extracts all jobs + projects</Mono>
                 </div>
+              </Card>
+
+              {/* ── LINKEDIN EASY APPLY SESSION ── */}
+              <Card style={{padding:"16px 20px",marginBottom:12,
+                border:`1px solid ${liSession.ready?C.teal:C.amber}40`,
+                background:liSession.ready?`${C.teal}05`:`${C.amber}05`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div>
+                    <Mono c={liSession.ready?C.teal:C.amber} s={12} w={700} style={{display:"block"}}>
+                      {liSession.ready?"✓ LinkedIn Easy Apply — Active":"⚠ LinkedIn Easy Apply — Not Connected"}
+                    </Mono>
+                    <Mono c={C.t2} s={11} style={{display:"block",marginTop:2}}>
+                      {liSession.ready
+                        ? "Session saved" + (liSession.session_age ? " · " + liSession.session_age : "") + " · Easy Apply jobs will auto-submit"
+                        : "Connect your LinkedIn session to enable Easy Apply auto-submission"}
+                    </Mono>
+                  </div>
+                  {liSession.ready&&<Pill label="Active" color={C.teal}/>}
+                </div>
+                {!liSession.ready&&(
+                  <div style={{marginTop:8}}>
+                    <p style={{color:C.t1,fontSize:11,marginBottom:10,lineHeight:1.6}}>
+                      To enable LinkedIn Easy Apply:<br/>
+                      1. Install <strong>Cookie Editor</strong> browser extension<br/>
+                      2. Go to <strong>linkedin.com</strong> while logged in<br/>
+                      3. Click Cookie Editor → Export → Copy JSON<br/>
+                      4. Paste below and click Save
+                    </p>
+                    <textarea rows={4} placeholder="Paste LinkedIn cookies JSON here..."
+                      id="li-session-input"
+                      style={{width:"100%",background:C.s1,border:`1px solid ${C.b0}`,
+                        borderRadius:7,padding:"10px 12px",color:C.t0,fontSize:12,
+                        fontFamily:"'Geist',sans-serif",resize:"vertical",outline:"none",
+                        boxSizing:"border-box"}}/>
+                    <Btn style={{marginTop:8,width:"100%",justifyContent:"center"}}
+                      onClick={async()=>{
+                        const val = document.getElementById("li-session-input").value.trim();
+                        if(!val){ setErr("Paste your LinkedIn cookies JSON first"); return; }
+                        try{
+                          const parsed = JSON.parse(val);
+                          const r = await apiFetch("/api/linkedin/save-session","POST",{session_data:parsed});
+                          if(r.error) throw new Error(r.error);
+                          setSaveMsg("✓ LinkedIn session saved — Easy Apply now active!");
+                          setLiSession({ready:true,has_session:true,session_age:"just now"});
+                          setTimeout(()=>setSaveMsg(""),5000);
+                        }catch(e){ setErr(e.message); }
+                      }}>
+                      💾 Save LinkedIn Session
+                    </Btn>
+                  </div>
+                )}
               </Card>
 
               {/* ── CONTACT ── */}
