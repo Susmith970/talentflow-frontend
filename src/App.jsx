@@ -624,7 +624,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {(()=>{
             const supported = ["greenhouse","lever","ashby","workable","smartrecruiters",
-                               "icims","bamboohr","universal"];
+                               "icims","bamboohr","universal","linkedin"];
             const plat = (job.apply_platform||"").toLowerCase();
             const canAutoSubmit = supported.includes(plat) || job.easy_apply;
             const hasResume = !!job.resume_filename;
