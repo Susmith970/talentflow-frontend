@@ -626,8 +626,17 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
             const supported = ["greenhouse","lever","ashby","workable","smartrecruiters",
                                "icims","bamboohr","universal","linkedin"];
             const plat = (job.apply_platform||"").toLowerCase();
-            const canAutoSubmit = supported.includes(plat) || job.easy_apply;
+            const url  = (job.apply_url||job.url||"").toLowerCase();
+            // Also detect greenhouse from URL in case apply_platform wasn't set correctly
+            const isGreenhouse = plat==="greenhouse" || url.includes("greenhouse.io");
+            const isLever      = plat==="lever"       || url.includes("lever.co");
+            const canAutoSubmit = supported.includes(plat) || job.easy_apply
+                                  || isGreenhouse || isLever;
             const hasResume = !!job.resume_filename;
+            // Use the most specific platform label for display
+            const platLabel = isGreenhouse ? "greenhouse"
+                            : isLever      ? "lever"
+                            : plat || "ATS";
 
             if(job.status==="submitted"){
               return <div style={{flex:1.4,padding:"9px 0",background:`${C.teal}15`,
@@ -653,7 +662,7 @@ function JobDrawer({ job: jobProp, onClose, onStatus, onGenResume, onApply, genL
                 {job.status==="applying"
                   ? <><Spin sz={11}/>Submitting…</>
                   : hasResume
-                    ? `⚡ Auto-Submit (${plat||"ATS"})`
+                    ? `⚡ Auto-Submit (${platLabel})`
                     : "📄 Gen Resume First"}
               </Btn>;
             }
@@ -940,6 +949,8 @@ function MainApp({ profile: initProfile, onLogout }) {
   const loadJobs  = useCallback(async () => {
     const data = await apiFetch("/api/jobs").catch(()=>[]);
     setJobs(Array.isArray(data)?data:[]);
+    // Silently fix any jobs that have wrong apply_platform
+    apiFetch("/api/jobs/fix-platforms","POST").catch(()=>{});
   },[]);
 
   const loadStats = useCallback(async () => {
