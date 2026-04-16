@@ -822,6 +822,84 @@ function sanitizeProfile(p) {
   return out;
 }
 
+// ── Pending Questions Modal — bot paused, waiting for user input ───────────────
+function PendingQsModal({ items, answers, setAnswers, onSubmit, onDismiss, loading, C }) {
+  if (!items || items.length === 0) return null;
+  const item = items[0]; // one job at a time
+  if (!item.questions || item.questions.length === 0) return null;
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:9999,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.s0,borderRadius:14,padding:"24px 26px",maxWidth:520,
+        width:"100%",border:`2px solid ${C.gold}60`,boxShadow:"0 24px 80px rgba(0,0,0,.6)",
+        maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:12}}>
+          <span style={{fontSize:24,lineHeight:1}}>⏸</span>
+          <div>
+            <div style={{color:C.gold,fontWeight:700,fontSize:13,
+              fontFamily:"'Geist',sans-serif",letterSpacing:".05em"}}>
+              BOT NEEDS YOUR INPUT
+            </div>
+            <div style={{color:C.t1,fontSize:11,marginTop:3}}>
+              The bot paused on: <strong style={{color:C.t0}}>{item.job_title||item.job_id}</strong>
+            </div>
+          </div>
+        </div>
+        <div style={{background:`${C.gold}08`,border:`1px solid ${C.gold}20`,borderRadius:7,
+          padding:"8px 12px",marginBottom:16,color:C.t1,fontSize:11,lineHeight:1.6}}>
+          {item.questions.length} required field(s) couldn't be answered automatically.
+          Fill them in and click <strong style={{color:C.gold}}>Resume Bot</strong> — 
+          it will fill these in and complete the submission.
+        </div>
+        {item.questions.map(q=>(
+          <div key={q.id} style={{marginBottom:14}}>
+            <div style={{color:C.t0,fontSize:12,fontWeight:600,marginBottom:6,lineHeight:1.4}}>
+              {q.label}
+              <span style={{color:C.amber,marginLeft:5,fontSize:10,fontWeight:400}}>required</span>
+            </div>
+            {q.type==="select" && q.options?.length>0
+              ? <select value={answers[q.id]||""}
+                  onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))}
+                  style={{width:"100%",padding:"9px 10px",background:C.s1,
+                    border:`1px solid ${answers[q.id]?C.teal:C.b0}`,borderRadius:7,
+                    color:C.t0,fontSize:12,fontFamily:"'Geist',sans-serif"}}>
+                  <option value="">-- Choose --</option>
+                  {q.options.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              : <input value={answers[q.id]||""}
+                  onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))}
+                  placeholder="Type your answer…"
+                  style={{width:"100%",padding:"9px 10px",background:C.s1,
+                    border:`1px solid ${answers[q.id]?C.teal:C.b0}`,borderRadius:7,
+                    color:C.t0,fontSize:12,fontFamily:"'Geist',sans-serif",
+                    boxSizing:"border-box"}}/>
+            }
+          </div>
+        ))}
+        <div style={{display:"flex",gap:10,marginTop:20}}>
+          <button onClick={()=>onSubmit(item.job_id)} disabled={loading}
+            style={{flex:1,padding:"11px 0",
+              background:"linear-gradient(135deg,#d4a853,#b8902e)",
+              borderRadius:8,border:"none",color:"#000",fontWeight:700,fontSize:12,
+              cursor:loading?"not-allowed":"pointer",fontFamily:"'Geist',sans-serif",
+              opacity:loading?.65:1}}>
+            {loading?"⏳ Resuming bot…":"✓ Resume Bot"}
+          </button>
+          <button onClick={()=>onDismiss(item.job_id)}
+            style={{padding:"11px 16px",background:C.s1,borderRadius:8,
+              border:`1px solid ${C.b0}`,color:C.t1,fontSize:12,
+              cursor:"pointer",fontFamily:"'Geist',sans-serif"}}>
+            Skip Job
+          </button>
+        </div>
+        <p style={{color:C.t2,fontSize:10,marginTop:10,textAlign:"center",lineHeight:1.5}}>
+          Bot waits up to 5 minutes. "Skip Job" marks it for manual apply.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function MainApp({ profile: initProfile, onLogout }) {
   const [profile, setProfile] = useState(sanitizeProfile(initProfile));
   const [page, setPage]       = useState("dashboard");
@@ -884,6 +962,20 @@ function MainApp({ profile: initProfile, onLogout }) {
     apiFetch("/api/linkedin/status").then(r=>{
       if(r && !r.error) setLiSession(r);
     }).catch(()=>{});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  // Poll for pending questions (bot waiting for user input)
+  useEffect(()=>{
+    const poll = async()=>{
+      try{
+        const r = await apiFetch("/api/apply/pending");
+        if(r && r.pending) setPendingQs(r.pending);
+      }catch(e){}
+    };
+    poll();
+    const iv = setInterval(poll, 8000);
+    return ()=>clearInterval(iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -2423,6 +2515,25 @@ function MainApp({ profile: initProfile, onLogout }) {
 
         </div>
       </main>
+      <PendingQsModal
+        items={pendingQs} answers={pqAnswers} setAnswers={setPqAnswers}
+        loading={pqLoading} C={C}
+        onSubmit={async(jobId)=>{
+          setPqLoading(true);
+          try{
+            const r=await apiFetch(`/api/apply/pending/${jobId}/answer`,"POST",{answers:pqAnswers});
+            if(r.error) throw new Error(r.error);
+            setPqAnswers({});
+            setPendingQs(qs=>qs.filter(q=>q.job_id!==jobId));
+          }catch(e){setErr(e.message);}
+          setPqLoading(false);
+        }}
+        onDismiss={async(jobId)=>{
+          await apiFetch(`/api/apply/pending/${jobId}`,"DELETE");
+          setPendingQs(qs=>qs.filter(q=>q.job_id!==jobId));
+          setPqAnswers({});
+        }}
+      />
     </div>
   );
 }
