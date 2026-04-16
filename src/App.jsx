@@ -915,6 +915,11 @@ function MainApp({ profile: initProfile, onLogout }) {
   const [tier, setTier]             = useState("free");
   const [liSession, setLiSession]   = useState({ready:false,has_session:false,session_age:null});
   const [tierLimits, setTierLimits] = useState({scrapes_per_day:3,applies_per_day:5});
+  // Pending questions — bot paused waiting for user input
+  // eslint-disable-next-line no-unused-vars
+  const [pendingQs,  setPendingQs]  = useState([]);
+  const [pqAnswers,  setPqAnswers]  = useState({});
+  const [pqLoading,  setPqLoading]  = useState(false);
   const [jobs, setJobs]       = useState([]);
   const [stats, setStats]     = useState({total:0,by_status:{},by_source:{}});
   const [resumes, setResumes] = useState([]);
